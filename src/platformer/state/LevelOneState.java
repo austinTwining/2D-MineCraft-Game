@@ -68,26 +68,38 @@ public class LevelOneState extends State {
 			// player moved left
 			for (int x = 0; x < diff; x++) {
 				int top = (int) Math.ceil(mainNoise.generateHeight((screenLeftTX) - x)) + 8;
+				int topUnder = (int)  Math.ceil(underNoise.generateHeight((screenLeftTX) + x)) + 18;
 				tiles.add(new Tile(((screenLeftTX) - x) * 64, (float) top * 64, 0, TileID.Dirt_Grass_tile));
 				
 				//generate stone (TODO)
 				
-				for (int y = 1; y < mapHeight; y++) {
-					tiles.add(new Tile(((screenLeftTX) - x) * 64, (float) (top + y) * 64, 1, TileID.Dirt_tile));
-					tiles.add(new Tile(((screenLeftTX) - x) * 64, (float) (top + y) * 64, 0, TileID.Dirt_tile));
+				for (int y = 0; y < mapHeight + 3; y++) {
+					if(screenTopTY + y > top && screenTopTY + y < topUnder){
+						tiles.add(new Tile(((screenLeftTX) - x) * 64, (float) (screenTopTY + y) * 64, 1, TileID.Dirt_tile));
+						tiles.add(new Tile(((screenLeftTX) - x) * 64, (float) (screenTopTY + y) * 64, 0, TileID.Dirt_tile));
+					}else if(screenTopTY + y >= topUnder && screenTopTY + y <= bedrockLevel){
+						tiles.add(new Tile(((screenLeftTX) - x) * 64, (float) (screenTopTY + y) * 64, 1, TileID.Greystone_tile));
+						tiles.add(new Tile(((screenLeftTX) - x) * 64, (float) (screenTopTY + y) * 64, 0, TileID.Greystone_tile));
+					}
 				}
 			}
 		} else if (playerTX > prevTX) {
 			// player moved right
 			for (int x = 0; x < diff; x++) {
 				int top = (int) Math.ceil(mainNoise.generateHeight((screenRightTX) + x)) + 8;
+				int topUnder = (int)  Math.ceil(underNoise.generateHeight((screenLeftTX) + x)) + 18;
 				tiles.add(new Tile(((screenRightTX) + x) * 64, (float) top * 64, 0, TileID.Dirt_Grass_tile));
 
 				//generate stone (TODO)
 				
-				for (int y = 1; y < mapHeight; y++) {
-					tiles.add(new Tile(((screenRightTX) + x) * 64, (float) (top + y) * 64, 1, TileID.Dirt_tile));
-					tiles.add(new Tile(((screenRightTX) + x) * 64, (float) (top + y) * 64, 0, TileID.Dirt_tile));
+				for (int y = 0; y < mapHeight + 3; y++) {
+					if(screenTopTY + y > top && screenTopTY + y < topUnder){
+						tiles.add(new Tile(((screenRightTX) + x) * 64, (float) (screenTopTY + y) * 64, 1, TileID.Dirt_tile));
+						tiles.add(new Tile(((screenRightTX) + x) * 64, (float) (screenTopTY + y) * 64, 0, TileID.Dirt_tile));
+					}else if(screenTopTY + y >= topUnder && screenTopTY + y <= bedrockLevel){
+						tiles.add(new Tile(((screenRightTX) + x) * 64, (float) (screenTopTY + y) * 64, 1, TileID.Greystone_tile));
+						tiles.add(new Tile(((screenRightTX) + x) * 64, (float) (screenTopTY + y) * 64, 0, TileID.Greystone_tile));
+					}
 				}
 			}
 		}
