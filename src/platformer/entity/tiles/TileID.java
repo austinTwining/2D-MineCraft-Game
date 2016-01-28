@@ -8,9 +8,14 @@ public enum TileID {
 	Dirt_Grass_tile(Main.imageLoader.loadImage("/Tiles64/dirt_grass.png"), true, 1),
 	Dirt_tile(Main.imageLoader.loadImage("/Tiles64/dirt.png"), true, 1),
 	Greystone_tile(Main.imageLoader.loadImage("/Tiles64/greystone.png"), true, 1),
-	Redstone_tile(Main.imageLoader.loadImage("/Tiles64/redstone.png"), true, 1),
+	Redstone_tile(Main.imageLoader.loadImage("/Tiles64/redstone.png"), true, -1),
 	Brick_Grey_tile(Main.imageLoader.loadImage("/Tiles64/brick_grey.png"), true, 1),
-	Brick_Red_tile(Main.imageLoader.loadImage("/Tiles64/brick_red.png"), true, -1);
+	Brick_Red_tile(Main.imageLoader.loadImage("/Tiles64/brick_red.png"), true, 1),
+	Stone_Iron_tile(Main.imageLoader.loadImage("/Tiles64/stone_browniron.png"), true, 1),
+	Stone_Coal_tile(Main.imageLoader.loadImage("/Tiles64/stone_coal.png"), true, 1),
+	Stone_Diamond_tile(Main.imageLoader.loadImage("/Tiles64/stone_diamond.png"), true, 1),
+	Stone_Gold_tile(Main.imageLoader.loadImage("/Tiles64/stone_gold.png"), true, 1),
+	Stone_Silver_tile(Main.imageLoader.loadImage("/Tiles64/stone_silver.png"), true, 1);
 	
 	private final BufferedImage texture;
 	private boolean isSolid;

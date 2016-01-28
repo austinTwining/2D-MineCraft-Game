@@ -21,7 +21,14 @@ public class LevelOneState extends State {
 	private Player player;
 
 	private PerlinNoise mainNoise;
-	private PerlinNoise underNoise;
+	private PerlinNoise stoneNoise;
+	private PerlinNoise ironNoise;
+	private PerlinNoise coalNoise;
+	private PerlinNoise diamondNoise;
+	private PerlinNoise goldNoise;
+	private PerlinNoise silverNoise;
+
+	private ArrayList<String> changes;// structure "X Y Z changetype tile"
 
 	private float camX = 0;
 	private float camY = 0;
@@ -31,21 +38,65 @@ public class LevelOneState extends State {
 	private int screenTopTY;
 	private int screenBottomTY;
 	private int prevTX, prevTY;
-	
-	//game vars
+
+	// game vars
 	private int bedrockLevel = 80;
+	private float oreAmp = 100f;
+	// iron
+	private int ironTop = 28;
+	private int ironBottom = 31;
+	private float ironFrequency = 0.5f;
+	// coal
+	private int coalTop = 23;
+	private int coalBottom = 27;
+	private float coalFrequency = 0.5f;
+	// diamond
+	private int diamondTop = 76;
+	private int diamondBottom = 79;
+	private float diamondFrequency = 0.05f;
+	// gold
+	private int goldTop = 56;
+	private int goldBottom = 58;
+	private float goldFrequency = 0.08f;
+	// silver
+	private int silverTop = 48;
+	private int silverBottom = 50;
+	private float silverFrequency = 0.1f;
 
 	public LevelOneState(GameStateManager gsm) {
 		super(gsm);
 		entities = new ArrayList<Entity>();
 		tiles = new ArrayList<Tile>();
+		changes = new ArrayList<String>();
+
 		mainNoise = new PerlinNoise();
-		underNoise = new PerlinNoise();
-		player = new Player(600, mainNoise.generateHeight((int) Math.ceil(600/64) - 4) - 180);
-		
+		stoneNoise = new PerlinNoise();
+
+		ironNoise = new PerlinNoise();
+		ironNoise.setFrequency(ironFrequency);
+		ironNoise.setAmplitude(oreAmp);
+
+		coalNoise = new PerlinNoise();
+		coalNoise.setFrequency(coalFrequency);
+		coalNoise.setAmplitude(oreAmp);
+
+		diamondNoise = new PerlinNoise();
+		diamondNoise.setFrequency(diamondFrequency);
+		diamondNoise.setAmplitude(oreAmp);
+
+		goldNoise = new PerlinNoise();
+		goldNoise.setFrequency(goldFrequency);
+		goldNoise.setAmplitude(oreAmp);
+
+		silverNoise = new PerlinNoise();
+		silverNoise.setFrequency(silverFrequency);
+		silverNoise.setAmplitude(oreAmp);
+
+		player = new Player(600, mainNoise.generateHeight((int) Math.ceil(600 / 64) - 4) - 180);
+
 		prevTX = (int) Math.ceil(player.getX() / 64);
 		prevTY = (int) Math.ceil(player.getY() / 64);
-		
+
 		generateMap();
 	}
 
@@ -68,18 +119,89 @@ public class LevelOneState extends State {
 			// player moved left
 			for (int x = 0; x < diff; x++) {
 				int top = (int) Math.ceil(mainNoise.generateHeight((screenLeftTX) - x)) + 8;
-				int topUnder = (int)  Math.ceil(underNoise.generateHeight((screenLeftTX) + x)) + 18;
-				tiles.add(new Tile(((screenLeftTX) - x) * 64, (float) top * 64, 0, TileID.Dirt_Grass_tile));
-				
-				//generate stone (TODO)
-				
+				int topUnder = (int) Math.ceil(stoneNoise.generateHeight((screenLeftTX) + x)) + 18;
+				int ironGen = (int) ((int) Math.ceil(ironNoise.generateHeight((screenLeftTX) + x))
+						+ Math.ceil((ironBottom - ironTop) / 2)) + ironTop;
+				int coalGen = (int) ((int) Math.ceil(coalNoise.generateHeight((screenLeftTX) + x))
+						+ Math.ceil((coalBottom - coalTop) / 2)) + coalTop;
+				int diamondGen = (int) ((int) Math.ceil(diamondNoise.generateHeight((screenLeftTX) + x))
+						+ Math.ceil((diamondBottom - diamondTop) / 2)) + diamondTop;
+				int goldGen = (int) ((int) Math.ceil(goldNoise.generateHeight((screenLeftTX) + x))
+						+ Math.ceil((goldBottom - goldTop) / 2)) + goldTop;
+				int silverGen = (int) ((int) Math.ceil(silverNoise.generateHeight((screenLeftTX) + x))
+						+ Math.ceil((silverBottom - silverTop) / 2)) + silverTop;
+
+				boolean topChange = false;
+
+				for (int i = 0; i < changes.size(); i++) {
+					String[] changesSplit = changes.get(i).split(" ");
+					int tempx = Integer.parseInt(changesSplit[0]);
+					int tempy = Integer.parseInt(changesSplit[1]);
+					int tempz = Integer.parseInt(changesSplit[2]);
+					char tempChangeType = changesSplit[3].charAt(0);
+					String tempTileChange = changesSplit[4];
+					if (tempx == (screenLeftTX) - x && tempy == top) {
+						if (tempChangeType == 'p')
+							tiles.add(new Tile(tempx * 64, tempy * 64, tempz, TileID.valueOf(tempTileChange)));
+						topChange = true;
+					}
+				}
+
+				if (!topChange)
+					tiles.add(new Tile(((screenLeftTX) - x) * 64, (float) top * 64, 0, TileID.Dirt_Grass_tile));
+
 				for (int y = 0; y < mapHeight + 3; y++) {
-					if(screenTopTY + y > top && screenTopTY + y < topUnder){
-						tiles.add(new Tile(((screenLeftTX) - x) * 64, (float) (screenTopTY + y) * 64, 1, TileID.Dirt_tile));
-						tiles.add(new Tile(((screenLeftTX) - x) * 64, (float) (screenTopTY + y) * 64, 0, TileID.Dirt_tile));
-					}else if(screenTopTY + y >= topUnder && screenTopTY + y <= bedrockLevel){
-						tiles.add(new Tile(((screenLeftTX) - x) * 64, (float) (screenTopTY + y) * 64, 1, TileID.Greystone_tile));
-						tiles.add(new Tile(((screenLeftTX) - x) * 64, (float) (screenTopTY + y) * 64, 0, TileID.Greystone_tile));
+					for (int z = 0; z < 2; z++) {
+						boolean changed = false;
+
+						for (int i = 0; i < changes.size(); i++) {
+							String[] changesSplit = changes.get(i).split(" ");
+							int tempx = Integer.parseInt(changesSplit[0]);
+							int tempy = Integer.parseInt(changesSplit[1]);
+							int tempz = Integer.parseInt(changesSplit[2]);
+							char tempChangeType = changesSplit[3].charAt(0);
+							String tempTileChange = changesSplit[4];
+							if (tempx == screenLeftTX - x && tempy == screenTopTY + y && tempz == z) {
+								if (tempChangeType == 'p')
+									tiles.add(new Tile(tempx * 64, tempy * 64, tempz, TileID.valueOf(tempTileChange)));
+								changed = true;
+							}
+						}
+
+						if (!changed) {
+							if (screenTopTY + y >= ironTop && screenTopTY + y <= ironBottom
+									&& screenTopTY + y == ironGen) {
+								tiles.add(new Tile(((screenLeftTX) - x) * 64, (float) (screenTopTY + y) * 64, z,
+										TileID.Stone_Iron_tile));
+							} else if (screenTopTY + y >= coalTop && screenTopTY + y <= coalBottom
+									&& screenTopTY + y == coalGen) {
+								tiles.add(new Tile(((screenLeftTX) - x) * 64, (float) (screenTopTY + y) * 64, z,
+										TileID.Stone_Coal_tile));
+							} else if (screenTopTY + y >= diamondTop && screenTopTY + y <= diamondBottom
+									&& screenTopTY + y == diamondGen) {
+								tiles.add(new Tile(((screenLeftTX) - x) * 64, (float) (screenTopTY + y) * 64, z,
+										TileID.Stone_Diamond_tile));
+							} else if (screenTopTY + y >= goldTop && screenTopTY + y <= goldBottom
+									&& screenTopTY + y == goldGen) {
+								tiles.add(new Tile(((screenLeftTX) - x) * 64, (float) (screenTopTY + y) * 64, z,
+										TileID.Stone_Gold_tile));
+							} else if (screenTopTY + y >= silverTop && screenTopTY + y <= silverBottom
+									&& screenTopTY + y == silverGen) {
+								tiles.add(new Tile(((screenLeftTX) - x) * 64, (float) (screenTopTY + y) * 64, z,
+										TileID.Stone_Silver_tile));
+							} else {
+								if (screenTopTY + y > top && screenTopTY + y < topUnder) {
+									tiles.add(new Tile(((screenLeftTX) - x) * 64, (float) (screenTopTY + y) * 64, z,
+											TileID.Dirt_tile));
+								} else if (screenTopTY + y >= topUnder && screenTopTY + y < bedrockLevel) {
+									tiles.add(new Tile(((screenLeftTX) - x) * 64, (float) (screenTopTY + y) * 64, z,
+											TileID.Greystone_tile));
+								} else if (screenTopTY + y >= bedrockLevel) {
+									tiles.add(new Tile(((screenLeftTX) - x) * 64, (float) (screenTopTY + y) * 64, z,
+											TileID.Redstone_tile));
+								}
+							}
+						}
 					}
 				}
 			}
@@ -87,18 +209,89 @@ public class LevelOneState extends State {
 			// player moved right
 			for (int x = 0; x < diff; x++) {
 				int top = (int) Math.ceil(mainNoise.generateHeight((screenRightTX) + x)) + 8;
-				int topUnder = (int)  Math.ceil(underNoise.generateHeight((screenLeftTX) + x)) + 18;
-				tiles.add(new Tile(((screenRightTX) + x) * 64, (float) top * 64, 0, TileID.Dirt_Grass_tile));
+				int topUnder = (int) Math.ceil(stoneNoise.generateHeight((screenRightTX) + x)) + 18;
+				int ironGen = (int) ((int) Math.ceil(ironNoise.generateHeight((screenRightTX) + x))
+						+ Math.ceil((ironBottom - ironTop) / 2)) + ironTop;
+				int coalGen = (int) ((int) Math.ceil(coalNoise.generateHeight((screenRightTX) + x))
+						+ Math.ceil((coalBottom - coalTop) / 2)) + coalTop;
+				int diamondGen = (int) ((int) Math.ceil(diamondNoise.generateHeight((screenRightTX) + x))
+						+ Math.ceil((diamondBottom - diamondTop) / 2)) + diamondTop;
+				int goldGen = (int) ((int) Math.ceil(goldNoise.generateHeight((screenRightTX) + x))
+						+ Math.ceil((goldBottom - goldTop) / 2)) + goldTop;
+				int silverGen = (int) ((int) Math.ceil(silverNoise.generateHeight((screenRightTX) + x))
+						+ Math.ceil((silverBottom - silverTop) / 2)) + silverTop;
 
-				//generate stone (TODO)
-				
+				boolean topChange = false;
+
+				for (int i = 0; i < changes.size(); i++) {
+					String[] changesSplit = changes.get(i).split(" ");
+					int tempx = Integer.parseInt(changesSplit[0]);
+					int tempy = Integer.parseInt(changesSplit[1]);
+					int tempz = Integer.parseInt(changesSplit[2]);
+					char tempChangeType = changesSplit[3].charAt(0);
+					String tempTileChange = changesSplit[4];
+					if (tempx == (screenRightTX) - x && tempy == top) {
+						if (tempChangeType == 'p')
+							tiles.add(new Tile(tempx * 64, tempy * 64, tempz, TileID.valueOf(tempTileChange)));
+						topChange = true;
+					}
+				}
+
+				if (!topChange)
+					tiles.add(new Tile(((screenRightTX) + x) * 64, (float) top * 64, 0, TileID.Dirt_Grass_tile));
+
 				for (int y = 0; y < mapHeight + 3; y++) {
-					if(screenTopTY + y > top && screenTopTY + y < topUnder){
-						tiles.add(new Tile(((screenRightTX) + x) * 64, (float) (screenTopTY + y) * 64, 1, TileID.Dirt_tile));
-						tiles.add(new Tile(((screenRightTX) + x) * 64, (float) (screenTopTY + y) * 64, 0, TileID.Dirt_tile));
-					}else if(screenTopTY + y >= topUnder && screenTopTY + y <= bedrockLevel){
-						tiles.add(new Tile(((screenRightTX) + x) * 64, (float) (screenTopTY + y) * 64, 1, TileID.Greystone_tile));
-						tiles.add(new Tile(((screenRightTX) + x) * 64, (float) (screenTopTY + y) * 64, 0, TileID.Greystone_tile));
+					for (int z = 0; z < 2; z++) {
+						boolean changed = false;
+
+						for (int i = 0; i < changes.size(); i++) {
+							String[] changesSplit = changes.get(i).split(" ");
+							int tempx = Integer.parseInt(changesSplit[0]);
+							int tempy = Integer.parseInt(changesSplit[1]);
+							int tempz = Integer.parseInt(changesSplit[2]);
+							char tempChangeType = changesSplit[3].charAt(0);
+							String tempTileChange = changesSplit[4];
+							if (tempx == (screenRightTX) - x && tempy == screenTopTY + y && tempz == z) {
+								if (tempChangeType == 'p')
+									tiles.add(new Tile(tempx * 64, tempy * 64, tempz, TileID.valueOf(tempTileChange)));
+								changed = true;
+							}
+						}
+
+						if (!changed) {
+							if (screenTopTY + y >= ironTop && screenTopTY + y <= ironBottom
+									&& screenTopTY + y == ironGen) {
+								tiles.add(new Tile(((screenRightTX) + x) * 64, (float) (screenTopTY + y) * 64, z,
+										TileID.Stone_Iron_tile));
+							} else if (screenTopTY + y >= coalTop && screenTopTY + y <= coalBottom
+									&& screenTopTY + y == coalGen) {
+								tiles.add(new Tile(((screenRightTX) + x) * 64, (float) (screenTopTY + y) * 64, z,
+										TileID.Stone_Coal_tile));
+							} else if (screenTopTY + y >= diamondTop && screenTopTY + y <= diamondBottom
+									&& screenTopTY + y == diamondGen) {
+								tiles.add(new Tile(((screenRightTX) + x) * 64, (float) (screenTopTY + y) * 64, z,
+										TileID.Stone_Diamond_tile));
+							} else if (screenTopTY + y >= goldTop && screenTopTY + y <= goldBottom
+									&& screenTopTY + y == goldGen) {
+								tiles.add(new Tile(((screenRightTX) + x) * 64, (float) (screenTopTY + y) * 64, z,
+										TileID.Stone_Gold_tile));
+							} else if (screenTopTY + y >= silverTop && screenTopTY + y <= silverBottom
+									&& screenTopTY + y == silverGen) {
+								tiles.add(new Tile(((screenRightTX) + x) * 64, (float) (screenTopTY + y) * 64, z,
+										TileID.Stone_Silver_tile));
+							} else {
+								if (screenTopTY + y > top && screenTopTY + y < topUnder) {
+									tiles.add(new Tile(((screenRightTX) + x) * 64, (float) (screenTopTY + y) * 64, z,
+											TileID.Dirt_tile));
+								} else if (screenTopTY + y >= topUnder && screenTopTY + y < bedrockLevel) {
+									tiles.add(new Tile(((screenRightTX) + x) * 64, (float) (screenTopTY + y) * 64, z,
+											TileID.Greystone_tile));
+								} else if (screenTopTY + y >= bedrockLevel) {
+									tiles.add(new Tile(((screenRightTX) + x) * 64, (float) (screenTopTY + y) * 64, z,
+											TileID.Redstone_tile));
+								}
+							}
+						}
 					}
 				}
 			}
@@ -111,36 +304,146 @@ public class LevelOneState extends State {
 		if (playerTY < prevTY) {
 			// player moved up
 			for (int d = 0; d < diff; d++) {
-				for(int x = 0; x < mapWidth; x++){
+				for (int x = 0; x < mapWidth; x++) {
 					int top = (int) Math.ceil(mainNoise.generateHeight((screenLeftTX) + x)) + 8;
-					int topUnder = (int)  Math.ceil(underNoise.generateHeight((screenLeftTX) + x)) + 18;
-					if(top < screenTopTY + d && topUnder + 1 > screenTopTY){
-						tiles.add(new Tile(((screenLeftTX) + x) * 64, (float) (screenTopTY + d) * 64, 1, TileID.Dirt_tile));
-						tiles.add(new Tile(((screenLeftTX) + x) * 64, (float) (screenTopTY + d) * 64, 0, TileID.Dirt_tile));
-					}else if(topUnder < screenTopTY + d){
-						tiles.add(new Tile(((screenLeftTX) + x) * 64, (float) (screenTopTY + d) * 64, 1, TileID.Greystone_tile));
-						tiles.add(new Tile(((screenLeftTX) + x) * 64, (float) (screenTopTY + d) * 64, 0, TileID.Greystone_tile));
-					}else if(top == screenTopTY + d){
-						tiles.add(new Tile(((screenLeftTX) + x) * 64, (float) (screenTopTY + d) * 64, 0, TileID.Dirt_Grass_tile));
+					int topUnder = (int) Math.ceil(stoneNoise.generateHeight((screenLeftTX) + x)) + 18;
+					int ironGen = (int) ((int) Math.ceil(ironNoise.generateHeight((screenLeftTX) + x))
+							+ Math.ceil((ironBottom - ironTop) / 2)) + ironTop;
+					int coalGen = (int) ((int) Math.ceil(coalNoise.generateHeight((screenLeftTX) + x))
+							+ Math.ceil((coalBottom - coalTop) / 2)) + coalTop;
+					int diamondGen = (int) ((int) Math.ceil(diamondNoise.generateHeight((screenLeftTX) + x))
+							+ Math.ceil((diamondBottom - diamondTop) / 2)) + diamondTop;
+					int goldGen = (int) ((int) Math.ceil(goldNoise.generateHeight((screenLeftTX) + x))
+							+ Math.ceil((goldBottom - goldTop) / 2)) + goldTop;
+					int silverGen = (int) ((int) Math.ceil(silverNoise.generateHeight((screenLeftTX) + x))
+							+ Math.ceil((silverBottom - silverTop) / 2)) + silverTop;
+
+					for (int z = 0; z < 2; z++) {
+						boolean changed = false;
+
+						for (int i = 0; i < changes.size(); i++) {
+							String[] changesSplit = changes.get(i).split(" ");
+							int tempx = Integer.parseInt(changesSplit[0]);
+							int tempy = Integer.parseInt(changesSplit[1]);
+							int tempz = Integer.parseInt(changesSplit[2]);
+							char tempChangeType = changesSplit[3].charAt(0);
+							String tempTileChange = changesSplit[4];
+							if (tempx == (screenLeftTX) + x && tempy == screenTopTY + d && tempz == z) {
+								if (tempChangeType == 'p')
+									tiles.add(new Tile(tempx * 64, tempy * 64, tempz, TileID.valueOf(tempTileChange)));
+								changed = true;
+							}
+						}
+
+						if (!changed) {
+							if (screenTopTY + d >= ironTop && screenTopTY + d <= ironBottom
+									&& screenTopTY + d == ironGen) {
+								tiles.add(new Tile(((screenLeftTX) + x) * 64, (float) (screenTopTY + d) * 64, z,
+										TileID.Stone_Iron_tile));
+							} else if (screenTopTY + d >= coalTop && screenTopTY + d <= coalBottom
+									&& screenTopTY + d == coalGen) {
+								tiles.add(new Tile(((screenLeftTX) + x) * 64, (float) (screenTopTY + d) * 64, z,
+										TileID.Stone_Coal_tile));
+								;
+							} else if (screenTopTY + d >= diamondTop && screenTopTY + d <= diamondBottom
+									&& screenTopTY + d == diamondGen) {
+								tiles.add(new Tile(((screenLeftTX) + x) * 64, (float) (screenTopTY + d) * 64, z,
+										TileID.Stone_Diamond_tile));
+							} else if (screenTopTY + d >= goldTop && screenTopTY + d <= goldBottom
+									&& screenTopTY + d == goldGen) {
+								tiles.add(new Tile(((screenLeftTX) + x) * 64, (float) (screenTopTY + d) * 64, z,
+										TileID.Stone_Gold_tile));
+							} else if (screenTopTY + d >= silverTop && screenTopTY + d <= silverBottom
+									&& screenTopTY + d == silverGen) {
+								tiles.add(new Tile(((screenLeftTX) + x) * 64, (float) (screenTopTY + d) * 64, z,
+										TileID.Stone_Silver_tile));
+							} else {
+								if (top < screenTopTY + d && topUnder + 1 > screenTopTY) {
+									tiles.add(new Tile(((screenLeftTX) + x) * 64, (float) (screenTopTY + d) * 64, z,
+											TileID.Dirt_tile));
+								} else if (topUnder < screenTopTY + d) {
+									tiles.add(new Tile(((screenLeftTX) + x) * 64, (float) (screenTopTY + d) * 64, z,
+											TileID.Greystone_tile));
+								} else if (top == screenTopTY + d && z == 0) {
+									tiles.add(new Tile(((screenLeftTX) + x) * 64, (float) (screenTopTY + d) * 64, z,
+											TileID.Dirt_Grass_tile));
+								}
+							}
+						}
 					}
 				}
 			}
 		} else if (playerTY > prevTY) {
 			// player moved down
 			for (int d = 0; d < diff; d++) {
-				for(int x = 0; x < mapWidth; x++){
+				for (int x = 0; x < mapWidth; x++) {
 					int top = (int) Math.ceil(mainNoise.generateHeight((screenLeftTX) + x)) + 8;
-					int topUnder = (int)  Math.ceil(underNoise.generateHeight((screenLeftTX) + x)) + 18;
-					if(screenBottomTY - d >= bedrockLevel){
-						tiles.add(new Tile(((screenLeftTX) + x) * 64, (float) (screenBottomTY - d) * 64, 0, TileID.Brick_Red_tile));
-					}else if(top < screenBottomTY - d && topUnder + 1 > screenBottomTY){
-						tiles.add(new Tile(((screenLeftTX) + x) * 64, (float) (screenBottomTY - d) * 64, 1, TileID.Dirt_tile));
-						tiles.add(new Tile(((screenLeftTX) + x) * 64, (float) (screenBottomTY - d) * 64, 0, TileID.Dirt_tile));
-					}else if(topUnder < screenBottomTY - d){
-						tiles.add(new Tile(((screenLeftTX) + x) * 64, (float) (screenBottomTY - d) * 64, 1, TileID.Greystone_tile));
-						tiles.add(new Tile(((screenLeftTX) + x) * 64, (float) (screenBottomTY - d) * 64, 0, TileID.Greystone_tile));
-					}else if(top == screenBottomTY - d){
-						tiles.add(new Tile(((screenLeftTX) + x) * 64, (float) (screenBottomTY - d) * 64, 0, TileID.Dirt_Grass_tile));
+					int topUnder = (int) Math.ceil(stoneNoise.generateHeight((screenLeftTX) + x)) + 18;
+					int ironGen = (int) ((int) Math.ceil(ironNoise.generateHeight((screenLeftTX) + x))
+							+ Math.ceil((ironBottom - ironTop) / 2)) + ironTop;
+					int coalGen = (int) ((int) Math.ceil(coalNoise.generateHeight((screenLeftTX) + x))
+							+ Math.ceil((coalBottom - coalTop) / 2)) + coalTop;
+					int diamondGen = (int) ((int) Math.ceil(diamondNoise.generateHeight((screenLeftTX) + x))
+							+ Math.ceil((diamondBottom - diamondTop) / 2)) + diamondTop;
+					int goldGen = (int) ((int) Math.ceil(goldNoise.generateHeight((screenLeftTX) + x))
+							+ Math.ceil((goldBottom - goldTop) / 2)) + goldTop;
+					int silverGen = (int) ((int) Math.ceil(silverNoise.generateHeight((screenLeftTX) + x))
+							+ Math.ceil((silverBottom - silverTop) / 2)) + silverTop;
+
+					for (int z = 0; z < 2; z++) {
+						boolean changed = false;
+
+						for (int i = 0; i < changes.size(); i++) {
+							String[] changesSplit = changes.get(i).split(" ");
+							int tempx = Integer.parseInt(changesSplit[0]);
+							int tempy = Integer.parseInt(changesSplit[1]);
+							int tempz = Integer.parseInt(changesSplit[2]);
+							char tempChangeType = changesSplit[3].charAt(0);
+							String tempTileChange = changesSplit[4];
+							if (tempx == (screenLeftTX) + x && tempy == screenBottomTY + d && tempz == z) {
+								if (tempChangeType == 'p')
+									tiles.add(new Tile(tempx * 64, tempy * 64, tempz, TileID.valueOf(tempTileChange)));
+								changed = true;
+							}
+						}
+
+						if(!changed){
+							if (screenBottomTY - d >= ironTop && screenBottomTY - d <= ironBottom
+									&& screenBottomTY - d == ironGen) {
+								tiles.add(new Tile(((screenLeftTX) + x) * 64, (float) (screenBottomTY - d) * 64, z,
+										TileID.Stone_Iron_tile));
+							} else if (screenBottomTY - d >= coalTop && screenBottomTY - d <= coalBottom
+									&& screenBottomTY - d == coalGen) {
+								tiles.add(new Tile(((screenLeftTX) + x) * 64, (float) (screenBottomTY - d) * 64, z,
+										TileID.Stone_Coal_tile));
+							} else if (screenBottomTY - d >= diamondTop && screenBottomTY - d <= diamondBottom
+									&& screenBottomTY - d == diamondGen) {
+								tiles.add(new Tile(((screenLeftTX) + x) * 64, (float) (screenBottomTY - d) * 64, z,
+										TileID.Stone_Diamond_tile));
+							} else if (screenBottomTY - d >= goldTop && screenBottomTY - d <= goldBottom
+									&& screenBottomTY - d == goldGen) {
+								tiles.add(new Tile(((screenLeftTX) + x) * 64, (float) (screenBottomTY - d) * 64, z,
+										TileID.Stone_Gold_tile));
+							} else if (screenBottomTY - d >= silverTop && screenBottomTY - d <= silverBottom
+									&& screenBottomTY - d == silverGen) {
+								tiles.add(new Tile(((screenLeftTX) + x) * 64, (float) (screenBottomTY - d) * 64, z,
+										TileID.Stone_Silver_tile));
+							} else {
+								if (screenBottomTY - d >= bedrockLevel) {
+									tiles.add(new Tile(((screenLeftTX) + x) * 64, (float) (screenBottomTY - d) * 64, z,
+											TileID.Redstone_tile));
+								} else if (top < screenBottomTY - d && topUnder + 1 > screenBottomTY) {
+									tiles.add(new Tile(((screenLeftTX) + x) * 64, (float) (screenBottomTY - d) * 64, z,
+											TileID.Dirt_tile));
+								} else if (topUnder < screenBottomTY - d) {
+									tiles.add(new Tile(((screenLeftTX) + x) * 64, (float) (screenBottomTY - d) * 64, z,
+											TileID.Greystone_tile));
+								} else if (top == screenBottomTY - d && z == 0) {
+									tiles.add(new Tile(((screenLeftTX) + x) * 64, (float) (screenBottomTY - d) * 64, z,
+											TileID.Dirt_Grass_tile));
+								}
+							}
+						}
 					}
 				}
 			}
@@ -238,17 +541,21 @@ public class LevelOneState extends State {
 	@Override
 	public void update() {
 		for (int i = 0; i < entities.size(); i++) {
-			entities.get(i).update(entities, tiles, camX, camY);
+			entities.get(i).update(entities, tiles, changes, camX, camY);
 		}
 		for (int j = 0; j < tiles.size(); j++) {
-			if(tiles.get(j).getHealth() == 0) tiles.remove(j);
-			tiles.get(j).update(entities, tiles, camX, camY);
+			tiles.get(j).update(entities, tiles, changes, camX, camY);
+			if (tiles.get(j).getHealth() == 0) {
+				saveChange(changes, (int) tiles.get(j).getX() / 64, (int) tiles.get(j).getY() / 64,
+						(int) tiles.get(j).getZ() / 64, 'd', "VOID");
+				tiles.remove(j);
+			}
 		}
-		player.update(entities, tiles, camX, camY);
+		player.update(entities, tiles, changes, camX, camY);
 
 		camX = player.getX() - Main.WIDTH / 2;
 		camY = player.getY() - Main.HEIGHT / 2;
-		
+
 		screenLeftTX = (int) (Math.ceil(player.getX() / 64) - Math.ceil((Main.WIDTH / 2) / 64)) - 2;
 		screenRightTX = (int) (Math.ceil(player.getX() / 64) + Math.ceil((Main.WIDTH / 2) / 64)) + 1;
 		screenTopTY = (int) (Math.ceil(player.getY() / 64) - Math.ceil((Main.HEIGHT / 2) / 64)) - 2;
@@ -275,6 +582,35 @@ public class LevelOneState extends State {
 		if (prevTY != Math.ceil(player.getY() / 64)) {
 			generateLineY(prevTY, (int) Math.ceil(player.getY() / 64));
 			prevTY = (int) Math.ceil(player.getY() / 64);
+		}
+	}
+
+	private void saveChange(ArrayList<String> changes, int x, int y, int z, char changeType, String tile) {
+		String change = Integer.toString(x) + " " + Integer.toString(y) + " " + Integer.toString(z) + " " + changeType
+				+ " " + tile;
+		if (changes.size() > 0) {
+			boolean prevChanged = false;
+
+			for (int i = 0; i < changes.size(); i++) {
+				String[] changesSplit = changes.get(i).split(" ");
+				int tempx = Integer.parseInt(changesSplit[0]);
+				int tempy = Integer.parseInt(changesSplit[1]);
+				int tempz = Integer.parseInt(changesSplit[2]);
+				if (tempx == x && tempy == y && tempz == z) {
+					changes.remove(i);
+					changes.add(change);
+					prevChanged = true;
+					System.out.println(change);
+				}
+			}
+
+			if (!prevChanged) {
+				changes.add(change);
+				System.out.println(change);
+			}
+		} else {
+			changes.add(change);
+			System.out.println(change);
 		}
 	}
 }

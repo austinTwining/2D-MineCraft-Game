@@ -4,7 +4,8 @@ import java.util.Random;
 
 public class PerlinNoise {
 	
-	private static final float AMPLITUDE = 30f;
+	private float AMPLITUDE = 30f;
+	private float FREQUENCY = 1;
 	
 	private Random random = new Random();
 	private int seed;
@@ -14,7 +15,7 @@ public class PerlinNoise {
 	}
 	
 	public float generateHeight(int x){
-		return getInterpolatedNoise(x) * AMPLITUDE;
+		return getInterpolatedNoise(x * FREQUENCY) * AMPLITUDE;
 	}
 	
 	private float getInterpolatedNoise(float x){
@@ -37,5 +38,11 @@ public class PerlinNoise {
 		double ft =  x * Math.PI;
 		float f = (float) ((1 - Math.cos(ft)) * 0.5);
 		return a*(1-f) + b*f;
+	}
+	public void setAmplitude(float amplitude){
+		AMPLITUDE = amplitude;
+	}
+	public void setFrequency(float frequency){
+		FREQUENCY = frequency;
 	}
 }
